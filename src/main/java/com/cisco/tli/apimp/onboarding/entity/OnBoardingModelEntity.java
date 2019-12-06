@@ -4,6 +4,7 @@
 package com.cisco.tli.apimp.onboarding.entity;
 
 import java.io.Serializable;
+import java.util.Date;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -40,5 +41,20 @@ public class OnBoardingModelEntity implements Serializable {
 	private Long modelFileSize;
 	
 	private String modelFileLocation;
+	
+	private String inputFileName;
+	
+	private String inputFileExtension;
+	
+	private Long inputFileSize;
+	
+	private String inputFileLocation;
+	
+	private String sampleOutput;
+	
+	private Date createdDate;
+	
+	private Date modifiedDate;
+	
 
 }

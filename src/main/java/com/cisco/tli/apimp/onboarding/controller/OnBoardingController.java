@@ -5,15 +5,16 @@ package com.cisco.tli.apimp.onboarding.controller;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -100,57 +101,61 @@ public class OnBoardingController {
 	@PostMapping("/models")
 	@ApiOperation("Add ML Models")
 	public ResponseEntity<?> addModel(@RequestParam("name") String name, @RequestParam("lib") List<String> lib,
-			@RequestPart("modelFile") MultipartFile modelFile) throws IOException, InterruptedException {
+			@RequestPart("modelFile") MultipartFile modelFile, @RequestPart("inputFile") MultipartFile inputFile,
+			@RequestParam("sampleOutput") String sampleOutput) throws IOException, InterruptedException {
 
 		// Installing lib
-
-		/*String cmd1 = "cd /Users/atiagarw/tli";
-		Runtime run1 = Runtime.getRuntime();
-		Process pr1 = run1.exec(cmd1);
-		pr1.waitFor();
-		BufferedReader buf1 = new BufferedReader(new InputStreamReader(pr1.getInputStream()));
-		String line1 = "";
-		while ((line1 = buf1.readLine()) != null) {
-			log.info("Output :: " + line1);
-		}*/
-		
-		
-		log.info("*****Constructing pip3 command");
-		//String[] cmd = new String[] {"/Library/Frameworks/Python.framework/Versions/3.8/bin/python3", "/Users/atiagarw/tli/py_scripts/linear_regression.py", "10", "20", "30"};
-		lib.stream().forEach(l-> {
+		log.info("Constructing install command");
+		lib.stream().forEach(l -> {
 			try {
-				String[] cmd = new String[] {"/Library/Frameworks/Python.framework/Versions/3.8/bin/pip3", "install", l};
+				String[] cmd = new String[] { "/Library/Frameworks/Python.framework/Versions/3.8/bin/pip3", "install",
+						l };
 				Process pr = Runtime.getRuntime().exec(cmd);
-				log.info("Executing pip3 command");
+				log.info("Executing install command");
 				pr.waitFor();
 				BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
 				String line = "";
-				log.info("Now printing o/p....");
+				log.info("Printing o/p....");
 				while ((line = buf.readLine()) != null) {
 					log.info("Output :: " + line);
 				}
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
-			
+
 		});
-		
 
 		// Saving to DB
 		OnBoardingModelEntity entity = new OnBoardingModelEntity();
 		entity.setId(UUID.randomUUID().toString());
 		entity.setName(name);
+		
 		String modelFileName = modelFile.getOriginalFilename();
 		entity.setModelFileName(modelFileName);
 		entity.setModelFileSize(modelFile.getSize());
 		entity.setModelFileExtension(modelFileName.substring(modelFileName.lastIndexOf(".") + 1));
 		Path modelFilePath = Paths.get("/Users/atiagarw/tli/models", modelFileName);
 		entity.setModelFileLocation(modelFilePath.toString());
+		
+		String inputFileName = inputFile.getOriginalFilename();
+		entity.setInputFileName(inputFileName);
+		entity.setInputFileSize(inputFile.getSize());
+		entity.setInputFileExtension(inputFileName.substring(inputFileName.lastIndexOf(".") + 1));
+		Path inputFilePath = Paths.get("/Users/atiagarw/tli/inputs", inputFileName);
+		entity.setInputFileLocation(inputFilePath.toString());
+		
+		entity.setSampleOutput(sampleOutput);
+		entity.setCreatedDate(new Date());
+		entity.setModifiedDate(new Date());
 		modelRepo.save(entity);
 
-		// Saving file to filesystem
+		// Saving model file to filesystem
 		modelUtil.copy(modelFile, "/Users/atiagarw/tli/models", modelFileName);
-		log.info("Saved to file system");
+		log.info("Saved model file to file system");
+		
+		// Saving model file to filesystem
+		modelUtil.copy(inputFile, "/Users/atiagarw/tli/inputs", inputFileName);
+		log.info("Saved input file to file system");
 		return ResponseEntity.status(HttpStatus.CREATED).body(entity);
 
 	}
@@ -158,7 +163,7 @@ public class OnBoardingController {
 	@GetMapping("/models")
 	@ApiOperation("Get All Models")
 	public ResponseEntity<?> getModels() {
-		return ResponseEntity.ok().body(modelRepo.findAll());
+		return ResponseEntity.ok().body(modelRepo.findAll(Sort.by("modifiedDate").descending()));
 
 	}
 
