@@ -33,3 +33,15 @@ dependencies {
 test {
 	useJUnitPlatform()
 }
+plugins {
+  id "org.sonarqube" version "2.8"
+}
+
+sonarqube {
+  properties {
+    property "sonar.projectKey", "atin-agarwal_on-boarding-service"
+    property "sonar.organization", "atin-agarwal"
+    property "sonar.host.url", "https://sonarcloud.io"
+    property "sonar.login", "22050e8982163dd01ae6926ae741a4db7baa9c15"
+  }
+}
